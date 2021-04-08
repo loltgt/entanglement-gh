@@ -1,0 +1,18 @@
+{
+  "name": "entanglement-gh",
+  "version": "0.0.1",
+  "description": "Custom builder for personal GitHub profile site.",
+  "main": "index.js",
+  "scripts": {
+    "copy-icons": "mkdir -p ./out/assets; cp -R vendor/icons/fonts ./out/assets"
+  },
+  "author": "Leonardo Laureti",
+  "license": "MIT",
+  "devDependencies": {
+    "clean-css": "^5.1.2",
+    "glob": "^7.1.6",
+    "http-server": "^0.12.3",
+    "lodash": "^4.17.21",
+    "terser": "^5.6.1"
+  }
+}

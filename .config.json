@@ -1,0 +1,34 @@
+{
+  "username": "",
+  "theme": "light",
+  "layout": ["profile", "repositories"],
+  "meta": {
+    "title": "",
+    "description": "",
+  },
+  "profile": {
+    "realname": false,
+    "bio": false,
+    "socials": null
+  },
+  "repos": {
+    "clientSide": false,
+    "limit": 6,
+    "exclude": null
+  },
+  "gists": {
+    "clientSide": false,
+    "limit": 6,
+    "exclude": null
+  },
+  "topics": null,
+  "stylesheets": ["./src/style.css", "./vendor/icons/style.css", "./custom.css"],
+  "scripts": ["./src/script.js", "./custom.js"],
+  "template_folder": "./template",
+  "src_folder": "./src",
+  "output_folder": "./out",
+  "assets_folder": "./out/assets",
+  "assets_stylesheet": "styles.css",
+  "assets_script": "scripts.js",
+  "serve": "0.0.0.0:8080"
+}

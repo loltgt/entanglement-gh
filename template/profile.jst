@@ -1,0 +1,16 @@
+<div class="profile">
+<div>
+<div class="profile-picture">
+<div style="display: block; width: 150px; height: 150px; background: #ccc;"></div>
+</div>
+<h1 class="profile-username"><%= username %></h1>
+</div>
+<div class="profile-link">
+<span class="icon-github"></span>
+<a href="<%= profile.html_url %>">@<%= username %></a>
+</div>
+<% if (profile.socials) { %>
+<div class="profile-socials">
+</div>
+<% } %>
+</div>

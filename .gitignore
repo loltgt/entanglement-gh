@@ -1,0 +1,7 @@
+.DS_Store
+.project
+config.json
+package-lock.json
+node_modules
+out
+tmp
