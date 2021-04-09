@@ -42,42 +42,95 @@ function config(file) {
 
 class request {
 
-  constructor(url, endpoint) {
-    this.url = url;
-    this.options = {
+  constructor(url, endpoint, options) {
+    this.request_url = url;
+    this.request_options = {
       headers: {
         'User-Agent': 'entanglement-gh/0.0.1'
       }
     };
 
-    try {
-      return this.routine(endpoint);
-    } catch (err) {
-      throw err;
+    return this.routine(endpoint, options);
+  }
+
+  routine(endpoint, options) {
+    return new Promise((resolve, reject) => {
+      this.request(this.request_url, endpoint, resolve, reject);
+    });
+  }
+
+  request(url, endpoint, resolve, reject) {
+    https.get(url, this.request_options, (response) => {
+      this.process(response, endpoint, resolve, reject);
+    }).on('error', (err) => {
+      reject({ err });
+    });
+  }
+
+  process(response, endpoint, resolve, reject) {
+    switch (response.statusCode) {
+      case 301:
+      case 302:
+      case 304:
+      case 307:
+      case 308:
+        var url = response.headers.location;
+
+        if (url) this.request(url, endpoint, resolve, reject);
+        else reject({ err: 'Error:', status: response.statusCode, msg: 'Missing URL.' });
+      break;
+
+      case 403:
+        this.parser(response).then((data) => {
+          var msg = 'message' in data ? data.message : '';
+
+          reject({ err: 'Error:', status: response.statusCode, msg });
+        }).catch(err => {
+          reject({ err, status: response.statusCode });
+        });
+      break;
+
+      case 200:
+      case 304:
+        this.complete(response, endpoint, resolve, reject);
+      break;
+
+      default:
+        reject({ err: 'Error:', status: response.statusCode, msg: 'Not a valid response.' });
     }
   }
 
-  routine(endpoint) {
+  parser(response) {
     return new Promise((resolve, reject) => {
-      https.get(this.url, this.options, (response) => {
-        var data = '';
+      var data = '';
 
-        response.on('data', (chunk) => {
-          data += chunk;
-        });
-        response.on('end', () => {
-          try {
-            var partial = {};
-            partial[endpoint] = JSON.parse(data);
-
-            resolve(partial);
-          } catch (err) {
-            reject(err);
-          }
-        });
-      }).on('error', (err) => {
-        reject(err);
+      response.on('data', (chunk) => {
+        data += chunk;
       });
+      response.on('end', () => {
+        try {
+          data = JSON.parse(data);
+
+          if (data.length === 0) {
+            throw 'Empty data.';
+          }
+
+          resolve(data);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  }
+
+  complete(response, endpoint, resolve, reject) {
+    this.parser(response).then((data) => {
+      var partial = {};
+      partial[endpoint] = data;
+
+      resolve(partial);
+    }).catch(err => {
+      reject({ err });
     });
   }
 
@@ -90,25 +143,39 @@ class layout {
     this.make.apply(this, arguments);
   }
 
-  async make(tplBase, tpls, outFile, tplData) {
+  async make(tplBase, tpls, outFile, tplData, clientTpls) {
     this.templateBase = tplBase;
     this.outputFile = outFile;
 
     var parts = [];
+    var templates = [];
 
-    for (const tplName of tpls) {
+    for (var tplName of tpls) {
       parts.push(await this.compile(tplName, tplData));
     }
+    for (var clientTplName of clientTpls) {
+      var template = await this.template(clientTplName);
 
-    var output = await this.compile('layout', { ...tplData, page: parts.join(''), templates: [] });
+      templates.push({ name: clientTplName, code: template });
+    }
+
+    var output = await this.compile('layout', { ...tplData, page: parts.join(''), templates });
     this.write(output);
+  }
+
+  template(tplName) {
+    try {
+      const tplFile = path.format({ dir: this.templateBase, name: tplName, ext: '.jst' });
+
+      return readFile(tplFile);
+    } catch (err) {
+      throw err;
+    }
   }
 
   async compile(tplName, tplData) {
     try {
-      const tplFile = path.format({ dir: this.templateBase, name: tplName, ext: '.jst' });
-
-      var data = await readFile(tplFile);
+      var data = await this.template(tplName);
       //TODO
       // data = data.toString().replace(/\n$/, '');
       var compiled = lodash.template(data);
@@ -167,7 +234,7 @@ const ASSETS_FOLDER = path.relative(CWD, CONFIG.assets_folder);
 
 const REST_API = 'https://api.github.com/users/%username%';
 
-var cached_data, log_emphasis_color;
+var cached_data;
 
 
 
@@ -183,17 +250,16 @@ function log() {
     white: '\x1b[37m'
   };
   var deep = arguments[1] ? arguments[1] : 0;
-  var msgs = [ ''.padStart(deep, '  '), arguments[0], ...Object.values(arguments).slice(2) ];
+  var color = arguments[2] && colors[arguments[2]] ? colors[arguments[2]] : false;
+  var msgs = [ ''.padStart(deep, '  '), arguments[0], ...Object.values(arguments).slice(3) ];
 
   if (! deep || deep === 2) {
     msgs.splice(0, 0, '\n');
     msgs.push('\n');
   }
-  if (deep === 1 || deep === 3 || log_emphasis_color) {
-    msgs.splice(0, 0, log_emphasis_color ? colors[log_emphasis_color] : colors.green);
+  if (deep === 1 || deep === 3 || color) {
+    msgs.splice(0, 0, color ? color : colors.green);
     msgs.push('\x1b[0m');
-
-    log_emphasis_color = '';
   }
 
   console.log(...msgs);
@@ -233,6 +299,11 @@ function html(depth = 1) {
     }
   };
 
+  var clientTpls = [];
+
+  if (CONFIG.repos.clientSide) clientTpls.push('repo');
+  if (CONFIG.gists.clientSide) clientTpls.push('gist');
+
   //TODO
   // limit
   // include
@@ -251,7 +322,7 @@ function html(depth = 1) {
 
     // writeFileSync('./tmp/test', JSON.stringify(tplData));
 
-    new layout(TEMPLATE_FOLDER, CONFIG.layout, outputFile, tplData);
+    new layout(TEMPLATE_FOLDER, CONFIG.layout, outputFile, tplData, clientTpls);
   });
 
   log('html', depth);
@@ -263,15 +334,22 @@ function fetch() {
     return Promise.resolve(cached_data);
   }
 
-  log_emphasis_color = 'cyan';
-
-  log('fetching from github ...');
+  log('fetching from github ...', 0, 'cyan');
 
   var url, endpoints = [];
   var data = cached_data = {};
 
-  if (! CONFIG.repos.clientSide) endpoints.push('repos');
-  if (! CONFIG.gists.clientSide) endpoints.push('gists');
+  const _resolved = () => {
+    log('fetched', 0, 'cyan', 'ok');
+    return true;
+  }
+  const _rejected = (reason) => {
+    log('error requesting', 0, false, reason.err, reason.status ? reason.status : '', reason.msg ? reason.msg : '');
+    return true;
+  }
+
+  if (! CONFIG.repos.clientSide) endpoints.push({ name: 'repos', options: CONFIG.repos });
+  if (! CONFIG.gists.clientSide) endpoints.push({ name: 'gists', options: CONFIG.gists });
 
   return new Promise((resolve, reject) => {
     // url = REST_API.replace('%username%', CONFIG.username);
@@ -279,28 +357,28 @@ function fetch() {
     const tmp_url = url;
 
     new request(url, 'profile').then((initial) => {
-      if (! initial) reject();
-
       Object.assign(data, initial);
 
       if (endpoints.length) {
         Promise.all(endpoints.map((endpoint) => {
-          // url = initial.profile[endpoint + '_url'];
-          url = tmp_url + '/' + endpoint;
+          // url = initial.profile[endpoint.name + '_url'];
+          url = tmp_url + '/' + endpoint.name;
 
-          return new request(url, endpoint);
+          return new request(url, endpoint.name, endpoint.options);
         })).then((partials) => {
           partials.forEach(function(partial) {
             Object.assign(data, partial);
           });
 
-          resolve(data);
+          _resolved() && resolve(data);
         }, reason => {
-          reject();
+          _rejected(reason) && reject(reason);
         });
       } else {
-        resolve(data);
+        _resolved() && resolve(data);
       }
+    }).catch(reason => {
+      _rejected(reason) && reject(reason);
     });
   });
 }
@@ -322,7 +400,7 @@ function watch(type) {
   glob(pattern, (err, files) => {
     if (err) throw err;
 
-    for (const file of files) {
+    for (var file of files) {
       fsWatch(file, (eventType, filename) => {
         if (eventType != 'change') return;
 
