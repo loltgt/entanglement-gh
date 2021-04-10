@@ -24,7 +24,7 @@ function config(file) {
     var data = readFileSync(file);
 
     if (! (typeof data == 'object' && data instanceof Buffer)) {
-      throw 'config: Bad configuration file.';
+      throw new Error('Bad configuration file.');
     }
 
     data = data.toString();
@@ -160,6 +160,8 @@ class layout {
     }
 
     var output = await this.compile('layout', { ...tplData, page: parts.join(''), templates });
+    output = output.replace(/^\n|\r$/gm, '');
+
     this.write(output);
   }
 
@@ -176,8 +178,6 @@ class layout {
   async compile(tplName, tplData) {
     try {
       var data = await this.template(tplName);
-      //TODO
-      // data = data.toString().replace(/\n$/, '');
       var compiled = lodash.template(data);
 
       return compiled(tplData);
@@ -316,8 +316,8 @@ function html(depth = 1) {
     };
 
     tplData.profile = data.profile;
-    tplData.repos = 'repos' in data ? data.repos : false;
-    tplData.gists = 'gists' in data ? data.gists : false;
+    tplData.repos = 'repos' in data ? data.repos : [];
+    tplData.gists = 'gists' in data ? data.gists : [];
     tplData.username = data.profile.login;
 
     // writeFileSync('./tmp/test', JSON.stringify(tplData));
@@ -430,7 +430,7 @@ function build(type, depth) {
 function serve() {
   var address = CONFIG.serve.match(/([^:]+):([0-9]+)/);
 
-  if (! address) throw 'Bad address in "serve" configuration parameter.';
+  if (! address) throw new TypeError('Bad address in "serve" configuration parameter.');
 
   var server = httpServer.createServer({ root: OUTPUT_FOLDER });
 
@@ -444,8 +444,6 @@ function router() {
   const argv = process.argv;
   var arg_type = argv[2] == 'watch' && argv[3] ? argv[3] : argv[2] != 'watch' ? argv[2] : null;
   var arg_watch = argv[2] == 'watch' ? true : false;
-
-  if (arg_type) arg_type = arg_type.toString();
 
   build(arg_type);
 

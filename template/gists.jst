@@ -1,14 +1,14 @@
 <div class="gists section">
-<div class="">
+<div class="section-head">
 <h2>Gists</h2>
 <p>Code and snippets I've written.</p>
 </div>
 <div class="gists cards">
-<% _.forEach(gists, (gist) => { %>
+<% for (const gist of gists) { %>
 <div class="gist card">
 <div class="card-head">
 <span class="icon icon-code"></span>
-<% _.forEach(gist.files, (file) => { %>
+<% _.forEach(gist.files, file => { %>
 <h3>
 <a href="<%= gist.html_url %>#file-<%= file.filename.replace('.', '-') %>"><%= file.filename %></a>
 </h3>
@@ -20,6 +20,6 @@
 <div class="card-foot">
 </div>
 </div>
-<% }) %>
+<% } %>
 </div>
 </div>

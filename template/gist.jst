@@ -1,7 +1,7 @@
 <div class="gist card">
 <div class="card-head">
 <span class="icon icon-code"></span>
-<% _.forEach(gist.files, (file) => { %>
+<% _.forEach(gist.files, file => { %>
 <h3>
 <a href="<%= gist.html_url %>#file-<%= file.filename.replace('.', '-') %>"><%= file.filename %></a>
 </h3>

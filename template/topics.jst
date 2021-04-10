@@ -1,9 +1,15 @@
-<div class="gists section">
-<div class="">
+<div class="topics section">
+<div class="section-head">
 <h2>Topics</h2>
 <p>Topics that I want to learn more about.</p>
 </div>
-<div>
+<div class="topics cards">
+<% for (const topic of topics) { %>
+<div class="topic card">
+<div class="card-text">
+<a class="" href="{ href }">{ name }</a>
 </div>
+</div>
+<% } %>
 </div>
 </div>

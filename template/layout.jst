@@ -15,11 +15,11 @@
 <%= page %>
 </div>
 <% if (templates) { %>
-<% _.forEach(templates, (template) => { %>
-<script type="text/template" id="tpl-<%= template.id %>">
+<% for (const template of templates) { %>
+<script type="text/template" id="tpl-<%= template.name %>">
 <%= template.code %>
 </script>
-<% }) %>
+<% } %>
 <% } %>
 <script src="<%= assets.script %>"></script>
 </body>
