@@ -1,15 +1,11 @@
-<div class="topics section">
+<div class="section topics">
 <div class="section-head">
 <h2>Topics</h2>
 <p>Topics that I want to learn more about.</p>
 </div>
-<div class="topics cards">
+<div class="cards topics">
 <% for (const topic of topics) { %>
-<div class="topic card">
-<div class="card-text">
-<a class="" href="{ href }">{ name }</a>
-</div>
-</div>
+<%- _.template(cards.topic)({ topic }) %>
 <% } %>
 </div>
 </div>

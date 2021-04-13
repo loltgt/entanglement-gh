@@ -1,23 +1,11 @@
-<div class="repositories section">
+<div class="section repositories">
 <div class="section-head">
 <h2>Repositories</h2>
 <p class="desc">GitHub repositories that I've built.</p>
 </div>
-<div class="repos cards">
+<div class="cards repos">
 <% for (const repo of repos) { %>
-<div class="repo card">
-<div class="card-head">
-<h3>
-<span class="icon icon-book"></span>
-<a href="<%= repo.html_url %>"><%= repo.name %></a>
-</h3>
-</div>
-<div class="card-text">
-<p><%= repo.description %></p>
-</div>
-<div class="card-foot">
-</div>
-</div>
+<%= _.template(cards.repo)({ repo }) %>
 <% } %>
 </div>
 </div>

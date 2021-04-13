@@ -42,13 +42,16 @@ function config(file) {
 
 class request {
 
-  constructor(url, endpoint, options) {
-    this.request_url = url;
-    this.request_options = {
+  constructor(url, endpoint, options = {}) {
+    const request_options = {
       headers: {
         'User-Agent': 'entanglement-gh/0.0.1'
       }
     };
+    var request_filter = this.filters(url, request_options, endpoint, options);
+
+    this.request_url = request_filter.url;
+    this.request_options = request_filter.options;
 
     return this.routine(endpoint, options);
   }
@@ -57,6 +60,22 @@ class request {
     return new Promise((resolve, reject) => {
       this.request(this.request_url, endpoint, resolve, reject);
     });
+  }
+
+  filters(request_url, request_options, endpoint, options) {
+    var qs = [];
+
+    if (endpoint === 'repos') {
+      if (options.sort && typeof options.sort == 'string') qs.push('sort=' + options.sort);
+      if (options.order && typeof options.order == 'string') qs.push('direction=' + options.order);
+      if (options.limit && typeof options.sort == 'number') qs.push('per_page=' + options.limit);
+    } else if (endpoint === 'gists') {
+      if (options.since && typeof options.since == 'string') qs.push('since=' + options.since);
+    }
+
+    if (qs.length) request_url += '?' + qs.join('&');
+
+    return { url: request_url, options: request_options };
   }
 
   request(url, endpoint, resolve, reject) {
@@ -137,26 +156,69 @@ class request {
 }
 
 
+function filtering(partial, endpoint) {
+  let _partial = partial[endpoint.name];
+
+  if (endpoint.options.include && typeof endpoint.options.include == 'object') {
+    var include = endpoint.options.include;
+    _partial = lodash.filter(_partial, (o) => (include.indexOf(o.name) == -1));
+  }
+  if (endpoint.options.exclude && typeof endpoint.options.exclude == 'object') {
+    var exclude = endpoint.options.exclude;
+    _partial = lodash.reject(_partial, (o) => (exclude.indexOf(o.name) != -1));
+  }
+  if (endpoint.name === 'gists') {
+    var sort, order;
+
+    if (endpoint.options.sort && typeof endpoint.options.sort == 'string') {
+      sort = endpoint.options.sort + '_at';
+    }
+    if (endpoint.options.order && typeof endpoint.options.order == 'string') {
+      order = endpoint.options.order;
+    }
+
+    _partial = lodash.orderBy(_partial, [sort, order]);
+  }
+  if (endpoint.options.limit && typeof endpoint.options.limit == 'number') {
+    var limit = endpoint.options.limit;
+
+    if (_partial.length !== endpoint.options.limit) {
+      _partial = lodash.take(_partial, limit);
+    }
+  }
+
+  partial[endpoint.name] = _partial;
+  
+  return partial;
+}
+
+
 class layout {
 
   constructor() {
     this.make.apply(this, arguments);
   }
 
-  async make(tplBase, tpls, outFile, tplData, clientTpls) {
+  async make(tplBase, tpls, cardTpls, outFile, tplData, clientTpls) {
     this.templateBase = tplBase;
     this.outputFile = outFile;
 
+    var cards = {};
     var parts = [];
     var templates = [];
 
+    for (var cardTplName of cardTpls) {
+      var template = await this.template(cardTplName);
+
+      cards[cardTplName] = template;
+    }
     for (var tplName of tpls) {
-      parts.push(await this.compile(tplName, tplData));
+      parts.push(await this.compile(tplName, { ...tplData, cards }));
     }
     for (var clientTplName of clientTpls) {
       var template = await this.template(clientTplName);
 
-      templates.push({ name: clientTplName, code: template });
+      templates.push({ name: clientTplName, source: template });
     }
 
     var output = await this.compile('layout', { ...tplData, page: parts.join(''), templates });
@@ -221,16 +283,21 @@ class assets {
 }
 
 
+const CWD = process.cwd();
 
-const configFile = './config.json';
+const configFile = path.format({ dir: CWD, base: 'config.json' });
 
 const CONFIG = config(configFile);
 
-const CWD = process.cwd();
+const DATA_FOLDER = path.relative(CWD, CONFIG.data_folder);
 const TEMPLATE_FOLDER = path.relative(CWD, CONFIG.template_folder);
 const SRC_FOLDER = path.relative(CWD, CONFIG.src_folder);
 const OUTPUT_FOLDER = path.relative(CWD, CONFIG.output_folder);
 const ASSETS_FOLDER = path.relative(CWD, CONFIG.assets_folder);
+
+const socialsFile = path.format({ dir: DATA_FOLDER, base: 'socials.json' });
+
+const SOCIALS = config(socialsFile);
 
 const REST_API = 'https://api.github.com/users/%username%';
 
@@ -285,11 +352,12 @@ function styles(depth = 1) {
 
 
 function html(depth = 1) {
-  const meta = CONFIG.meta;
-
   const outputFile = path.format({ dir: OUTPUT_FOLDER, base: 'index.html' });
   const assetStylesheetFile = path.relative(OUTPUT_FOLDER, path.format({ dir: ASSETS_FOLDER, base: CONFIG.assets_stylesheet }));
   const assetScriptFile = path.relative(OUTPUT_FOLDER, path.format({ dir: ASSETS_FOLDER, base: CONFIG.assets_script }));
+
+  const tpls = CONFIG.layout;
+  const cardTpls = ['repo', 'gist', 'topic'];
 
   var tplData = {
     theme: 'theme' in CONFIG && CONFIG.theme ? CONFIG.theme : 'light',
@@ -304,25 +372,37 @@ function html(depth = 1) {
   if (CONFIG.repos.clientSide) clientTpls.push('repo');
   if (CONFIG.gists.clientSide) clientTpls.push('gist');
 
-  //TODO
-  // limit
-  // include
-  // exclude
+  const meta = 'meta' in CONFIG && CONFIG.meta && typeof CONFIG.meta == 'object' ? CONFIG.meta : {};
+  const profile = 'profile' in CONFIG && CONFIG.profile && typeof CONFIG.profile == 'object' ? CONFIG.profile : {};
+  const socials = 'socials' in CONFIG && CONFIG.socials && typeof CONFIG.socials == 'object' ? CONFIG.socials : {};
+
+  var socials_data = [];
+
+  for (var social_slug in socials) {
+    var social_url = socials[social_slug];
+
+    if (social_slug in SOCIALS) socials_data.push({ name: SOCIALS[social_slug].name, icon: 'icon-' + SOCIALS[social_slug].icon, url: social_url });
+    else socials_data.push({ name: social_slug, icon: 'icon-' + social_slug, url: social_url });
+  }
+
   fetch().then(function(data) {
     tplData.meta = {
-      title: meta && 'title' in meta && !! meta.title ? meta.title : data.profile.login,
+      title: meta && 'title' in meta && !! meta.title ? meta.title : data.user.login,
       description: meta && 'description' in meta && !! meta.description ? meta.description : '',
-      image: data.profile.avatar_url
+      image: data.user.avatar_url
     };
+    tplData.profile = profile;
+    tplData.socials = socials;
 
-    tplData.profile = data.profile;
+    tplData.user = data.user;
     tplData.repos = 'repos' in data ? data.repos : [];
     tplData.gists = 'gists' in data ? data.gists : [];
-    tplData.username = data.profile.login;
+    tplData.socials = socials_data;
+    tplData.username = data.user.login;
 
     // writeFileSync('./tmp/test', JSON.stringify(tplData));
 
-    new layout(TEMPLATE_FOLDER, CONFIG.layout, outputFile, tplData, clientTpls);
+    new layout(TEMPLATE_FOLDER, tpls, cardTpls, outputFile, tplData, clientTpls);
   });
 
   log('html', depth);
@@ -348,26 +428,32 @@ function fetch() {
     return true;
   }
 
-  if (! CONFIG.repos.clientSide) endpoints.push({ name: 'repos', options: CONFIG.repos });
-  if (! CONFIG.gists.clientSide) endpoints.push({ name: 'gists', options: CONFIG.gists });
+  const defaults_repos = defaults_gists = { limit: 6, sort: 'updated' };
+
+  if (! CONFIG.repos.clientSide) endpoints.push({ name: 'repos', options: lodash.defaults({}, CONFIG.repos, defaults_repos) });
+  if (! CONFIG.gists.clientSide) endpoints.push({ name: 'gists', options: lodash.defaults({}, CONFIG.gists, defaults_gists) });
 
   return new Promise((resolve, reject) => {
     // url = REST_API.replace('%username%', CONFIG.username);
     url = 'http://0.0.0.0:8000/users/%username%';
     const tmp_url = url;
 
-    new request(url, 'profile').then((initial) => {
+    new request(url, 'user').then((initial) => {
       Object.assign(data, initial);
 
       if (endpoints.length) {
         Promise.all(endpoints.map((endpoint) => {
-          // url = initial.profile[endpoint.name + '_url'];
+          // url = initial.user[endpoint.name + '_url'];
           url = tmp_url + '/' + endpoint.name;
 
           return new request(url, endpoint.name, endpoint.options);
         })).then((partials) => {
           partials.forEach(function(partial) {
-            Object.assign(data, partial);
+            var endpoint_name = Object.keys(partial)[0];
+            var endpoint_index = lodash.findIndex(endpoints, { name: endpoint_name });
+            var endpoint = endpoints[endpoint_index];
+
+            Object.assign(data, filtering(partial, endpoint));
           });
 
           _resolved() && resolve(data);
