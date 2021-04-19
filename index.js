@@ -6,13 +6,12 @@
  * @license MIT License
  */
 
-//TODO writeFileSync
-const { readFileSync, writeFileSync, watch: fsWatch } = require('fs');
+const { readFileSync, watch: fsWatch } = require('fs');
 const { readFile, writeFile } = require('fs/promises');
 const httpServer = require('http-server');
 const path = require('path');
 const glob = require('glob');
-const https = require('http');
+const https = require('http'); //TODO https
 const lodash = require('lodash');
 const CleanCSS = require('clean-css');
 const { minify } = require('terser');
@@ -99,7 +98,17 @@ class request {
         else reject({ err: 'Error:', status: response.statusCode, msg: 'Missing URL.' });
       break;
 
+      case 204:
+      case 400:
+      case 401:
       case 403:
+      case 408:
+      case 410:
+      case 429:
+      case 500:
+      case 502:
+      case 503:
+      case 504:
         this.parser(response).then((data) => {
           var msg = 'message' in data ? data.message : '';
 
@@ -188,7 +197,7 @@ function filtering(partial, endpoint) {
   }
 
   partial[endpoint.name] = _partial;
-  
+
   return partial;
 }
 
@@ -283,11 +292,31 @@ class assets {
 }
 
 
+const DEFAULT_CONFIG = {
+  "theme": "light",
+  "layout": ["profile", "repos", "topics"],
+  "profile": {
+    "realname": false,
+    "location": false,
+    "socials": false
+  },
+  "stylesheets": ["./src/style.css", "./vendor/icons/style.css", "./custom.css"],
+  "scripts": ["./src/script.js", "./custom.js"],
+  "data_folder": "./data",
+  "template_folder": "./template",
+  "src_folder": "./src",
+  "output_folder": "./out",
+  "assets_folder": "./out/assets",
+  "assets_stylesheet": "styles.css",
+  "assets_script": "scripts.js",
+  "serve": "0.0.0.0:8080"
+};
+
 const CWD = process.cwd();
 
 const configFile = path.format({ dir: CWD, base: 'config.json' });
 
-const CONFIG = config(configFile);
+const CONFIG = lodash.defaults(config(configFile), DEFAULT_CONFIG);
 
 const DATA_FOLDER = path.relative(CWD, CONFIG.data_folder);
 const TEMPLATE_FOLDER = path.relative(CWD, CONFIG.template_folder);
@@ -295,8 +324,10 @@ const SRC_FOLDER = path.relative(CWD, CONFIG.src_folder);
 const OUTPUT_FOLDER = path.relative(CWD, CONFIG.output_folder);
 const ASSETS_FOLDER = path.relative(CWD, CONFIG.assets_folder);
 
+const languageCodeFile = path.format({ dir: DATA_FOLDER, base: 'language-code.json' });
 const socialsFile = path.format({ dir: DATA_FOLDER, base: 'socials.json' });
 
+const LANGUAGE_CODE = config(languageCodeFile);
 const SOCIALS = config(socialsFile);
 
 const REST_API = 'https://api.github.com/users/%username%';
@@ -360,21 +391,28 @@ function html(depth = 1) {
   const cardTpls = ['repo', 'gist', 'topic'];
 
   var tplData = {
-    theme: 'theme' in CONFIG && CONFIG.theme ? CONFIG.theme : 'light',
+    theme: CONFIG.theme,
     assets: {
       stylesheet: assetStylesheetFile,
       script: assetScriptFile
-    }
+    },
+    languageCode: LANGUAGE_CODE
   };
 
   var clientTpls = [];
 
-  if (CONFIG.repos.clientSide) clientTpls.push('repo');
-  if (CONFIG.gists.clientSide) clientTpls.push('gist');
+  if ('repos' in CONFIG && typeof CONFIG.repos == 'object' && CONFIG.repos.clientSide) {
+    clientTpls.push('repo');
+  }
+  if ('gists' in CONFIG && typeof CONFIG.gists == 'object' && CONFIG.gists.clientSide) {
+    clientTpls.push('gist');
+  }
 
   const meta = 'meta' in CONFIG && CONFIG.meta && typeof CONFIG.meta == 'object' ? CONFIG.meta : {};
-  const profile = 'profile' in CONFIG && CONFIG.profile && typeof CONFIG.profile == 'object' ? CONFIG.profile : {};
+  const profile = lodash.defaults({}, CONFIG.profile, { realname: true, location: true, socials: false });
   const socials = 'socials' in CONFIG && CONFIG.socials && typeof CONFIG.socials == 'object' ? CONFIG.socials : {};
+  const topics = 'topics' in CONFIG && CONFIG.topics && typeof CONFIG.topics == 'object' ? CONFIG.topics : {};
+
 
   var socials_data = [];
 
@@ -384,6 +422,19 @@ function html(depth = 1) {
     if (social_slug in SOCIALS) socials_data.push({ name: SOCIALS[social_slug].name, icon: 'icon-' + SOCIALS[social_slug].icon, url: social_url });
     else socials_data.push({ name: social_slug, icon: 'icon-' + social_slug, url: social_url });
   }
+
+  var topics_data = [];
+
+  for (var topic_slug of topics) {
+    topic_slug = topic_slug.trim().toLowerCase();
+
+    var topic_url = 'https://github.com/topics/' + topic_slug.toLowerCase().trim();
+
+    topics_data.push({ name: topic_slug, url: topic_url });
+  }
+
+  var body_classname = [ 'site', CONFIG.theme, 'sections-' + (CONFIG.layout.length - 1) ];
+
 
   fetch().then(function(data) {
     tplData.meta = {
@@ -397,10 +448,10 @@ function html(depth = 1) {
     tplData.user = data.user;
     tplData.repos = 'repos' in data ? data.repos : [];
     tplData.gists = 'gists' in data ? data.gists : [];
+    tplData.topics = topics_data;
     tplData.socials = socials_data;
     tplData.username = data.user.login;
-
-    // writeFileSync('./tmp/test', JSON.stringify(tplData));
+    tplData.bodyClassname = body_classname.join(' ');
 
     new layout(TEMPLATE_FOLDER, tpls, cardTpls, outputFile, tplData, clientTpls);
   });
@@ -428,10 +479,16 @@ function fetch() {
     return true;
   }
 
-  const defaults_repos = defaults_gists = { limit: 6, sort: 'updated' };
 
-  if (! CONFIG.repos.clientSide) endpoints.push({ name: 'repos', options: lodash.defaults({}, CONFIG.repos, defaults_repos) });
-  if (! CONFIG.gists.clientSide) endpoints.push({ name: 'gists', options: lodash.defaults({}, CONFIG.gists, defaults_gists) });
+  const defaults_repos = defaults_gists = { clientSide: false, limit: 6, sort: 'updated' };
+
+  if (! ('repos' in CONFIG && typeof CONFIG.repos == 'object' && CONFIG.repos.clientSide)) {
+    endpoints.push({ name: 'repos', options: lodash.defaults({}, CONFIG.repos, defaults_repos) });
+  }
+  if (! ('gists' in CONFIG && typeof CONFIG.gists == 'object' && CONFIG.gists.clientSide)) {
+    endpoints.push({ name: 'gists', options: lodash.defaults({}, CONFIG.gists, defaults_gists) });
+  }
+
 
   return new Promise((resolve, reject) => {
     // url = REST_API.replace('%username%', CONFIG.username);
@@ -540,3 +597,22 @@ function router() {
 
 
 router();
+
+
+module.exports = {
+  default: router,
+  config,
+  request,
+  filtering,
+  layout,
+  assets,
+  log,
+  scripts,
+  styles,
+  html,
+  fetch,
+  watch,
+  build,
+  serve,
+  router
+};

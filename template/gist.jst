@@ -1,4 +1,4 @@
-<div class="gist card">
+<div class="card gist">
 <div class="card-head">
 <span class="icon icon-code"></span>
 <% _.forEach(gist.files, file => { %>
@@ -13,7 +13,7 @@
 <div class="card-foot">
 <% _.forEach(gist.files, file => { %>
 <div class="card_file">
-<% if (file.language) { %><span class="card_lang-code lang-code-<%= file.language.toLowerCase().replace(/\s/g, '-').replace(/\+/g, '-plus').replace(/#/g, '-sharp') %>"><%= file.language %></span><% } %>
+<% if (file.language) { %><span class="card_lang-code lang-code-<%= file.language.toLowerCase().replace(/\s/g, '-').replace(/\+/g, '-plus').replace(/#/g, '-sharp') %>"<% if (file.language in languageCode) { %> style="background-color: <%= languageCode[file.language] %>;"<% } %>><%= file.language %></span><% } %>
 <span class="card_link"><a href="<%= gist.html_url %>#file-<%= file.filename.replace(/\./g, '-') %>"><%= file.filename %></a></span>
 </div>
 <% }) %>

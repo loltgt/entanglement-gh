@@ -123,6 +123,16 @@ a:hover {
 .profile-head .profile_picture {
   margin: 0 0 3rem;
 }
+.profile_picture {
+  width: 150px;
+  height: 150px;
+}
+.profile_picture img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 0;
+}
 .profile_socials {
   margin: 2.5rem 0 0;
 }
@@ -159,6 +169,12 @@ a:hover {
   background-color: #999; 
   cursor: default;
 }
+.card_topic {
+  margin: 0;
+  padding: .5rem;
+  font-size: 1rem;
+  text-align: center;
+}
 
 .card-foot .card_link {
   display: inline-block;
@@ -180,19 +196,19 @@ a:hover {
 .light a, .light .profile_socials_item a:hover, .light .profile_socials_item a:focus { color: #1977d3; }
 .light .profile_socials_item a, .light .card-foot a { color: #000; }
 .light .card-foot a:hover, .light .card-foot a:focus { color: #fff; background-color: #1977d3; }
-.light .section { background-color: #edf1f3; }
+.light .page, .light .section { background-color: #edf1f3; }
 .light, .light .profile, .light .card { background-color: #fff; }
 .light .card { box-shadow: 0 0 3px rgba(0, 0, 0, .15); }
-.light .card_lang-code { text-shadow: 0 0 10px #999, 0 0 50px #999; }
+.light .card_lang-code { text-shadow: 0 0 5px #888, 0 0 10px #999, 0 0 50px #999; }
 
 .dark { background: #000; color: #fff; }
 .dark a, .dark .profile_socials_item a:hover, .dark .profile_socials_item a:focus { color: dodgerblue; }
 .dark .profile_socials_item a, .dark .card-foot a, .dark .card_lang-code { color: #fff; }
 .dark .card-foot a:hover, .dark .card-foot a:focus { background-color: dodgerblue; }
-.dark .section { background-color: #161718; }
+.dark .page, .dark .section { background-color: #161718; }
 .dark .profile { background-color: #0a0b0f; }
 .dark .card { background-color: #222325; /*background-color: #1e2024;*/ box-shadow: 0 0 3px rgba(0, 0, 0, .35); }
-.dark .card_lang-code { text-shadow: 0 0 10px #000, 0 0 50px #000; }
+.dark .card_lang-code { text-shadow: 0 0 5px #555, 0 0 10px #000, 0 0 50px #000; }
 
 
 
@@ -216,6 +232,10 @@ a:hover {
     grid-template-columns: .33fr 1fr;
     /*grid-template-rows: repeat(2, 1fr);*/
   }
+  .sections-1 .page {
+    align-items: center;
+    grid-template-rows: 1fr;
+  }
   .profile {
     position: sticky;
     top: 0;
@@ -224,10 +244,20 @@ a:hover {
     height: 100vh;
   }
   .cards {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .card-text {
     font-size: .85rem;
+  }
+
+  .card_topic {
+    font-size: 1.1rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .cards {
+    grid-template-columns: repeat(3, 1fr);
   }
 }

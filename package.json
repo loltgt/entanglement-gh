@@ -4,7 +4,17 @@
   "description": "Custom builder for personal GitHub profile site.",
   "main": "index.js",
   "scripts": {
-    "copy-icons": "mkdir -p ./out/assets; cp -R vendor/icons/fonts ./out/assets"
+    "build": "node index.js",
+    "build-js": "node index.js js",
+    "build-css": "node index.js css",
+    "build-html": "node index.js html",
+    "watch": "node index.js watch",
+    "watch-js": "node index.js watch js",
+    "watch-css": "node index.js watch css",
+    "watch-html": "node index.js watch html",
+    "copy-icons": "mkdir -p ./out/assets; cp -R ./vendor/icons/fonts ./out/assets",
+    "copy-language-code": "cp ./vendor/language-code/language-code.json ./data",
+    "make-language-code": "node ./vendor/language-code/language.js"
   },
   "author": "Leonardo Laureti",
   "license": "MIT",

@@ -52,5 +52,5 @@
   "git": { "name": "Git", "icon": "git" },
   "codepen": { "name": "Codepen", "icon": "codepen" },
   "email": { "name": "Email", "icon": "envelope-closed" },
-  "website": { "name": "Website", "icon": "globe" }
+  "website": { "name": "Website", "icon": "external-link" }
 }

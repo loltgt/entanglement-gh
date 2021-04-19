@@ -10,11 +10,11 @@
 <meta property="og:description" content="<%= meta.description %>">
 <link rel="stylesheet" type="text/css" href="<%= assets.stylesheet %>">
 </head>
-<body class="<%= theme %>">
+<body class="<%= bodyClassname %>">
 <div class="page">
 <%= page %>
 </div>
-<% if (templates) { %>
+<% if (templates && templates.length) { %>
 <% for (const template of templates) { %>
 <script type="text/template" id="tpl-<%= template.name %>">
 <%= template.code %>

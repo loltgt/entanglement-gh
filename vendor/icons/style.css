@@ -1,10 +1,10 @@
 @font-face {
   font-family: 'icons';
   src:
-    url('fonts/icons.woff2?siuq5e') format('woff2'),
-    url('fonts/icons.woff?siuq5e') format('woff'),
-    url('fonts/icons.ttf?siuq5e') format('truetype'),
-    url('fonts/icons.svg?siuq5e#icons') format('svg');
+    url('fonts/icons.woff2?mmexg4') format('woff2'),
+    url('fonts/icons.woff?mmexg4') format('woff'),
+    url('fonts/icons.ttf?mmexg4') format('truetype'),
+    url('fonts/icons.svg?mmexg4#icons') format('svg');
   font-weight: normal;
   font-style: normal;
   font-display: block;
@@ -117,6 +117,12 @@
 }
 .icon-link:before {
   content: "\e986";
+}
+.icon-location:before {
+  content: "\e901";
+}
+.icon-map-marker:before {
+  content: "\e902";
 }
 .icon-magnifying-glass:before {
   content: "\e98f";
