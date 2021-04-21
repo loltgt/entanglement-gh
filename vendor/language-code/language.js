@@ -1,3 +1,12 @@
+/*!
+ * entanglement-gh (language-code)
+ *
+ * @version 0.0.1
+ * @link https://github.com/loltgt/entanglement-gh
+ * @copyright Copyright (C) Leonardo Laureti
+ * @license MIT License
+ */
+
 const https = require('https');
 const { writeFileSync } = require('fs');
 const yaml = require('yaml');
@@ -25,9 +34,11 @@ function request(url, cb) {
       break;
 
       case 204: return console.error('No Content', response.statusCode); break;
+      case 303: return console.error('See Other', response.statusCode); break;
       case 400: return console.error('Bad Request', response.statusCode); break;
       case 401: return console.error('Unauthorized', response.statusCode); break;
       case 403: return console.error('Forbidden', response.statusCode); break;
+      case 404: return console.error('Not Found', response.statusCode); break;
       case 408: return console.error('Request Timeout', response.statusCode); break;
       case 410: return console.error('Gone', response.statusCode); break;
       case 429: return console.error('Too Many Requests', response.statusCode); break;

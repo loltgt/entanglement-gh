@@ -2,6 +2,7 @@
  * entanglement-gh
  *
  * @version 0.0.1
+ * @link https://github.com/loltgt/entanglement-gh
  * @copyright Copyright (C) Leonardo Laureti
  * @license MIT License
  */
@@ -11,7 +12,10 @@ const { readFile, writeFile } = require('fs/promises');
 const httpServer = require('http-server');
 const path = require('path');
 const glob = require('glob');
-const https = require('http'); //TODO https
+
+// const https = require('http'); // local debug
+const https = require('https');
+
 const lodash = require('lodash');
 const CleanCSS = require('clean-css');
 const { minify } = require('terser');
@@ -26,11 +30,7 @@ function config(file) {
       throw new Error('Bad configuration file.');
     }
 
-    data = data.toString();
-    data = data.replace(/\/\/([^\r\n]+)|(\/[\*]+)(=?[\w\W]+?)(\*\/)/g, '');
-    data = data.replace(/([\s]+)([\s]+)|[\r\n\t]+/g, '');
-    data = data.replace(/\,(=?(?=\}))/g, '');
-    data = JSON.parse(data);
+    data = JSON.parse(data.toString());
 
     return data;
   } catch (err) {
@@ -64,11 +64,11 @@ class request {
   filters(request_url, request_options, endpoint, options) {
     var qs = [];
 
-    if (endpoint === 'repos') {
-      if (options.sort && typeof options.sort == 'string') qs.push('sort=' + options.sort);
+    if (endpoint == 'repos') {
       if (options.order && typeof options.order == 'string') qs.push('direction=' + options.order);
-      if (options.limit && typeof options.sort == 'number') qs.push('per_page=' + options.limit);
-    } else if (endpoint === 'gists') {
+      if (options.sort && typeof options.sort == 'string') qs.push('sort=' + options.sort);
+      if (options.strict && options.limit && typeof options.limit == 'number') qs.push('per_page=' + options.limit);
+    } else if (endpoint == 'gists') {
       if (options.since && typeof options.since == 'string') qs.push('since=' + options.since);
     }
 
@@ -99,9 +99,11 @@ class request {
       break;
 
       case 204:
+      case 303:
       case 400:
       case 401:
       case 403:
+      case 404:
       case 408:
       case 410:
       case 429:
@@ -166,15 +168,19 @@ class request {
 
 
 function filtering(partial, endpoint) {
-  let _partial = partial[endpoint.name];
+  let data = partial[endpoint.name];
 
   if (endpoint.options.include && typeof endpoint.options.include == 'object') {
     var include = endpoint.options.include;
-    _partial = lodash.filter(_partial, (o) => (include.indexOf(o.name) == -1));
+    data = lodash.filter(data, (o) => (include.indexOf(o.name) != -1));
+    data = lodash.compact(include.map((name) => {
+      var i = lodash.findIndex(data, { name: name });
+      if (i != -1) return data[i];
+    }));
   }
   if (endpoint.options.exclude && typeof endpoint.options.exclude == 'object') {
     var exclude = endpoint.options.exclude;
-    _partial = lodash.reject(_partial, (o) => (exclude.indexOf(o.name) != -1));
+    data = lodash.reject(data, (o) => (exclude.indexOf(o.name) != -1));
   }
   if (endpoint.name === 'gists') {
     var sort, order;
@@ -186,17 +192,17 @@ function filtering(partial, endpoint) {
       order = endpoint.options.order;
     }
 
-    _partial = lodash.orderBy(_partial, [sort, order]);
+    data = lodash.orderBy(data, [sort, order]);
   }
   if (endpoint.options.limit && typeof endpoint.options.limit == 'number') {
     var limit = endpoint.options.limit;
 
-    if (_partial.length !== endpoint.options.limit) {
-      _partial = lodash.take(_partial, limit);
+    if (data.length !== endpoint.options.limit) {
+      data = lodash.take(data, limit);
     }
   }
 
-  partial[endpoint.name] = _partial;
+  partial[endpoint.name] = data;
 
   return partial;
 }
@@ -216,18 +222,19 @@ class layout {
     var parts = [];
     var templates = [];
 
-    for (var cardTplName of cardTpls) {
-      var template = await this.template(cardTplName);
+    for (var name of cardTpls) {
+      var template = await this.template(name);
 
-      cards[cardTplName] = template;
+      cards[name] = template;
     }
-    for (var tplName of tpls) {
-      parts.push(await this.compile(tplName, { ...tplData, cards }));
+    for (var name of tpls) {
+      parts.push(await this.compile(name, { ...tplData, cards }));
     }
-    for (var clientTplName of clientTpls) {
-      var template = await this.template(clientTplName);
+    for (var name of clientTpls) {
+      var source = await this.source(name);
+      source = await minify(source, { keep_fnames: true });
 
-      templates.push({ name: clientTplName, source: template });
+      templates.push({ name, source: source.code });
     }
 
     var output = await this.compile('layout', { ...tplData, page: parts.join(''), templates });
@@ -246,12 +253,21 @@ class layout {
     }
   }
 
+  async source(tplName, tplData) {
+    try {
+      var data = await this.template(tplName);
+
+      return lodash.template(data).source.replace('function(obj)', 'function entanglement_gh__' + tplName + '(obj)');
+    } catch (err) {
+      throw err;
+    }
+  }
+
   async compile(tplName, tplData) {
     try {
       var data = await this.template(tplName);
-      var compiled = lodash.template(data);
 
-      return compiled(tplData);
+      return lodash.template(data)(tplData);
     } catch (err) {
       throw err;
     }
@@ -270,20 +286,20 @@ class layout {
 
 class assets {
 
-  static async styles(files, dst, options) {
+  static async styles(files, dst, options, postProcessor = a => a) {
     try {
       var output = new CleanCSS(options).minify(files);
-      writeFile(dst, output.styles);
+      writeFile(dst, postProcessor(output.styles));
     } catch (err) {
       throw err;
     }
   }
 
-  static async scripts(files, dst, options) {
+  static async scripts(files, dst, options, postProcessor = a => a) {
     try {
       var input = await Promise.all(files.map((file) => readFile(file)));
       var output = await minify(input.map((data) => data.toString()), options);
-      writeFile(dst, output.code);
+      writeFile(dst, postProcessor(output.code));
     } catch (err) {
       throw err;
     }
@@ -295,11 +311,6 @@ class assets {
 const DEFAULT_CONFIG = {
   "theme": "light",
   "layout": ["profile", "repos", "topics"],
-  "profile": {
-    "realname": false,
-    "location": false,
-    "socials": false
-  },
   "stylesheets": ["./src/style.css", "./vendor/icons/style.css", "./custom.css"],
   "scripts": ["./src/script.js", "./custom.js"],
   "data_folder": "./data",
@@ -309,9 +320,13 @@ const DEFAULT_CONFIG = {
   "assets_folder": "./out/assets",
   "assets_stylesheet": "styles.css",
   "assets_script": "scripts.js",
+  "clientSide": false,
+  "clientSideOptions": null,
+  "clientSideDebug": false,
   "serve": "0.0.0.0:8080"
 };
 
+//TODO
 const CWD = process.cwd();
 
 const configFile = path.format({ dir: CWD, base: 'config.json' });
@@ -334,9 +349,14 @@ const REST_API = 'https://api.github.com/users/%username%';
 
 var cached_data;
 
+//TODO
+// custom data
+// queries
 
 
-function log() {
+
+function debug() {
+  const method = this != globalThis ? this : 'log';
   const colors = {
     black: '\x1b[30m',
     red: '\x1b[31m',
@@ -360,14 +380,53 @@ function log() {
     msgs.push('\x1b[0m');
   }
 
-  console.log(...msgs);
+  console[method](...msgs);
 }
+
+function log() { debug.apply('log', arguments); }
+function error() { debug.apply('error', arguments); }
 
 
 function scripts(depth = 1) {
+  var clientSideLayout = [];
+  var clientSideConfig = {};
+
+  const defaults_repos = defaults_gists = { limit: 6, sort: 'updated' };
+  const defaults_options = lodash.defaults({}, CONFIG.clientSideOptions);
+
+  if (CONFIG.layout.indexOf('repos') != -1 && CONFIG.clientSide && CONFIG.clientSide.indexOf('repos') != -1) {
+    clientSideLayout.push('repos');
+    clientSideConfig.repos = lodash.defaults({}, defaults_options.repos ? defaults_options.repos : CONFIG.repos, defaults_repos);
+    clientSideConfig.repos.strict = !! defaults_options.repos;
+  }
+  if (CONFIG.layout.indexOf('gists') != -1 && CONFIG.clientSide && CONFIG.clientSide.indexOf('gists') != -1) {
+    clientSideLayout.push('gists');
+    clientSideConfig.gists = lodash.defaults({}, defaults_options.gists ? defaults_options.gists : CONFIG.gists, defaults_gists);
+    clientSideConfig.gists.strict = !! defaults_options.gists;
+  }
+  if (CONFIG.layout.indexOf('topics') != -1 && CONFIG.clientSide && CONFIG.clientSide.indexOf('topics') != -1) {
+    clientSideLayout.push('topics');
+    clientSideConfig.topics = 'topics' in CONFIG && CONFIG.topics && typeof CONFIG.topics == 'object' ? CONFIG.topics : {};
+  }
+
   const assetFile = path.format({ dir: ASSETS_FOLDER, base: CONFIG.assets_script });
 
-  assets.scripts(CONFIG.scripts, assetFile);
+  assets.scripts(
+    CONFIG.scripts,
+    assetFile,
+    {
+      compress: { unused: Object.keys(clientSideConfig).length ? false : true }
+    },
+    a => (
+      a
+       .replace('%%REST_API%%', REST_API)
+       .replace('%%USERNAME%%', CONFIG.username)
+       .replace('"%%LAYOUT%%"', JSON.stringify(clientSideLayout))
+       .replace('"%%CONFIG%%"', JSON.stringify(clientSideConfig))
+       .replace('"%%LANGUAGE_CODE%%"', JSON.stringify(LANGUAGE_CODE, (k, v) => (v ? v : undefined)))
+       .replace('"%%DEBUG%%"', !! CONFIG.clientSideDebug)
+    )
+  );
 
   log('scripts', depth);
 }
@@ -376,7 +435,12 @@ function scripts(depth = 1) {
 function styles(depth = 1) {
   const assetFile = path.format({ dir: ASSETS_FOLDER, base: CONFIG.assets_stylesheet });
 
-  assets.styles(CONFIG.stylesheets, assetFile);
+  assets.styles(
+    CONFIG.stylesheets,
+    assetFile,
+    null,
+    a => (a.replace(/(\/\*\!.+\*\/)/, '$1\n'))
+  );
 
   log('styles', depth);
 }
@@ -401,30 +465,38 @@ function html(depth = 1) {
 
   var clientTpls = [];
 
-  if ('repos' in CONFIG && typeof CONFIG.repos == 'object' && CONFIG.repos.clientSide) {
+  if (CONFIG.layout.indexOf('repos') != -1 && CONFIG.clientSide && CONFIG.clientSide.indexOf('repos') != -1) {
     clientTpls.push('repo');
   }
-  if ('gists' in CONFIG && typeof CONFIG.gists == 'object' && CONFIG.gists.clientSide) {
+  if (CONFIG.layout.indexOf('gists') != -1 && CONFIG.clientSide && CONFIG.clientSide.indexOf('gists') != -1) {
     clientTpls.push('gist');
+  }
+  if (CONFIG.layout.indexOf('topics') != -1 && CONFIG.clientSide && CONFIG.clientSide.indexOf('topics') != -1) {
+    clientTpls.push('topic');
   }
 
   const meta = 'meta' in CONFIG && CONFIG.meta && typeof CONFIG.meta == 'object' ? CONFIG.meta : {};
-  const profile = lodash.defaults({}, CONFIG.profile, { realname: true, location: true, socials: false });
+  const profile = lodash.defaults({}, CONFIG.profile, { realname: false, location: false, socials: false });
   const socials = 'socials' in CONFIG && CONFIG.socials && typeof CONFIG.socials == 'object' ? CONFIG.socials : {};
   const topics = 'topics' in CONFIG && CONFIG.topics && typeof CONFIG.topics == 'object' ? CONFIG.topics : {};
 
 
   var socials_data = [];
 
+  //TODO FIX ? not iterable error
   for (var social_slug in socials) {
     var social_url = socials[social_slug];
 
-    if (social_slug in SOCIALS) socials_data.push({ name: SOCIALS[social_slug].name, icon: 'icon-' + SOCIALS[social_slug].icon, url: social_url });
-    else socials_data.push({ name: social_slug, icon: 'icon-' + social_slug, url: social_url });
+    if (social_slug in SOCIALS) {
+      socials_data.push({ name: SOCIALS[social_slug].name, icon: 'icon-' + SOCIALS[social_slug].icon, url: social_url });
+    } else {
+      socials_data.push({ name: social_slug, icon: 'icon-' + social_slug, url: social_url });
+    }
   }
 
   var topics_data = [];
 
+  //TODO FIX ? not iterable error
   for (var topic_slug of topics) {
     topic_slug = topic_slug.trim().toLowerCase();
 
@@ -475,33 +547,33 @@ function fetch() {
     return true;
   }
   const _rejected = (reason) => {
-    log('error requesting', 0, false, reason.err, reason.status ? reason.status : '', reason.msg ? reason.msg : '');
+    error('error requesting', 0, false, reason.err, reason.status ? reason.status : '', reason.msg ? reason.msg : '');
     return true;
   }
 
 
-  const defaults_repos = defaults_gists = { clientSide: false, limit: 6, sort: 'updated' };
+  const defaults_repos = defaults_gists = { limit: 6, sort: 'updated' };
 
-  if (! ('repos' in CONFIG && typeof CONFIG.repos == 'object' && CONFIG.repos.clientSide)) {
+  if (! (CONFIG.layout.indexOf('repos') != -1 && CONFIG.clientSide && CONFIG.clientSide.indexOf('repos') != -1)) {
     endpoints.push({ name: 'repos', options: lodash.defaults({}, CONFIG.repos, defaults_repos) });
   }
-  if (! ('gists' in CONFIG && typeof CONFIG.gists == 'object' && CONFIG.gists.clientSide)) {
+  if (! (CONFIG.layout.indexOf('gists') != -1 && CONFIG.clientSide && CONFIG.clientSide.indexOf('gists') != -1)) {
     endpoints.push({ name: 'gists', options: lodash.defaults({}, CONFIG.gists, defaults_gists) });
   }
 
 
   return new Promise((resolve, reject) => {
-    // url = REST_API.replace('%username%', CONFIG.username);
-    url = 'http://0.0.0.0:8000/users/%username%';
-    const tmp_url = url;
+    url = REST_API.replace('%username%', CONFIG.username);
+    // url = 'http://0.0.0.0:8000/users/%username%'; // local debug
+    // const tmp_url = url; // local debug
 
     new request(url, 'user').then((initial) => {
       Object.assign(data, initial);
 
       if (endpoints.length) {
         Promise.all(endpoints.map((endpoint) => {
-          // url = initial.user[endpoint.name + '_url'];
-          url = tmp_url + '/' + endpoint.name;
+          url = initial.user[endpoint.name + '_url'].replace(/\{.+\}/, '');
+          // url = tmp_url + '/' + endpoint.name; // local debug
 
           return new request(url, endpoint.name, endpoint.options);
         })).then((partials) => {
@@ -575,11 +647,16 @@ function serve() {
 
   if (! address) throw new TypeError('Bad address in "serve" configuration parameter.');
 
-  var server = httpServer.createServer({ root: OUTPUT_FOLDER });
+  var server = httpServer.createServer({
+    root: OUTPUT_FOLDER,
+    logFn: ((req, res, err) => {
+      if (err) error('serve error', 0, false, req.method, req.url, err.status, err.message);
+    })
+  });
 
-  server.listen(address[2], address[1]);
-
-  log('serving at ' + address[0] + ' ...');
+  server.listen(address[2], address[1], () => {
+    log('serving at ' + address[0] + ' ...');
+  });
 }
 
 
@@ -606,7 +683,9 @@ module.exports = {
   filtering,
   layout,
   assets,
+  debug,
   log,
+  error,
   scripts,
   styles,
   html,

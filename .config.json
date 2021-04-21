@@ -22,6 +22,14 @@
     "exclude": null
   },
   "topics": null,
+  "clientSide": ["repos", "gists"],
+  "clientSideOptions": {
+    "repos": {
+      "limit": 100,
+      "exclude": null
+    }
+  },
+  "clientSideDebug": true,
   "stylesheets": ["./src/style.css", "./vendor/icons/style.css", "./custom.css"],
   "scripts": ["./src/script.js", "./custom.js"],
   "template_folder": "./template",

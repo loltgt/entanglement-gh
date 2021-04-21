@@ -1,6 +1,6 @@
 {
   "name": "language-code",
-  "version": "1.0",
+  "version": "1.0.0",
   "description": "It makes a file data for language code colors.",
   "main": "language.js",
   "private": true,

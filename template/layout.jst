@@ -16,9 +16,7 @@
 </div>
 <% if (templates && templates.length) { %>
 <% for (const template of templates) { %>
-<script type="text/template" id="tpl-<%= template.name %>">
-<%= template.code %>
-</script>
+<script id="entanglement_gh__<%= template.name %>"><%= template.source %></script>
 <% } %>
 <% } %>
 <script src="<%= assets.script %>"></script>
