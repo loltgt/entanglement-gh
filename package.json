@@ -1,7 +1,7 @@
 {
   "name": "entanglement-gh",
   "version": "0.0.1",
-  "description": "Custom builder for personal GitHub profile site.",
+  "description": "Custom builder for personal profile website on GitHub.",
   "main": "index.js",
   "scripts": {
     "build": "node index.js",

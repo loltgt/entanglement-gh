@@ -1,6 +1,6 @@
 # entanglement-gh
 
-Custom builder for personal GitHub profile site.
+Custom builder for personal profile website on GitHub.
 
  
 For testing purpose — **under development**

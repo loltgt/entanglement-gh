@@ -105,7 +105,7 @@ entanglement_gh.prototype.callback = function(endpoint, id, element, response) {
 
     this.compile(tpl, element, data);
   } else {
-    console.error('entanglement_gh', 'callback', id, -1);
+    DEBUG && console.error('entanglement_gh', 'callback', id, -1);
   }
 
   this.unref(id); // remote only
@@ -193,8 +193,6 @@ entanglement_gh.prototype.compile = function(tpl, element, data) {
     var obj = Object.assign({}, this.obj);
 
     obj[tpl] = data[i];
-
-    console.log('entanglement_gh__' + tpl);
 
     const item = globalThis['entanglement_gh__' + tpl](obj);
 
