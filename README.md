@@ -17,6 +17,8 @@ It is written in JavaScript and makes use of GitHub's [REST API](https://docs.gi
 
 ###### You can contribute by filling in issues, sending pull requests and actively participating in this project.
 
+ 
+
 An example of websites that this software can create, *light* theme: [loltgt.github.io](https://loltgt.github.io), *dark* theme: [ctlcltd.github.io](https://ctlcltd.github.io).
 
 
@@ -108,12 +110,12 @@ field | settings | example
 "topics" | Topics | Array [ "a-topic", "another-topic", ... ]
 "socials" | List of social pages | Array
 "clientSide" | Use of client side dynamic | Array [ "repos", "gists" ]
-"clientSideOptions" | More control over the client side | { "repos": { "limit": 100, "exclude": null }, ... }
-"clientSideDebug" | Enable the debugger in the client side | Boolean
+"clientSideOptions" | More control over the client side | { "repos": { "limit": 100, "exclude": [ "exclude-this-repo-on-client-side", ... ] }, ... }
+"clientSideDebug" | Enable the debugger in the client side | Boolean true
 "stylesheets" | Assets static stylesheet | Array [ "./src/style.css", "./vendor/icons/style.css", "./custom.css" ]
 "scripts" | Assets static scripts | Array [ "./src/script.js", "./custom.js" ]
 "template_folder" | Template folder | String "./template"
-"src_folder" | Source folder | String "./src",
+"src_folder" | Source folder | String "./src"
 "output_folder" | Output folder for deploy | String "./out"
 "assets_folder" | Assets static folder | String "./out/assets"
 "assets_stylesheet" | The single stylesheet will created | String "styles.css"
@@ -124,7 +126,9 @@ The script loads the API predefined number of repositories and gists. If you wan
 
 The dynamic page update with client side differs from the static site. This is due to limitations. If you want to have more control over the client side settings you can pass options for *repos* and *gists* via the parameter `"clientSideOptions": Object`.
 
-⚠️ On the client side, there are limits of request numbers per visitor. So use the client side option at your known risk. Learn more about the [Rate limiting](https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting) in the official documentation.
+ 
+
+⚠️ On the client side, there are limits on the number of requests per visitor. So use the client side option at your known risk. Learn more about the [Rate limiting](https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting) in the official documentation.
 
 
 ## Credits
