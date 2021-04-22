@@ -6,12 +6,12 @@ For testing purpose — **under development**
 This is a builder to create a one-page website profile to use in your GitHub Pages domain, for example: yourusername.github.io.
 
 It supports various layout settings:
-* **profile** sidebar with profile user information.
+* **profile** sidebar with profile user information
 * **repos** user repositories
 * **gists** user gists
 * **topics** user topics
 
-This is not the original software provided by GitHub which can be found in this repo: github/personal-website, now flagged as archived. It is not meant to be a replacement, it works differently while creating similar results.
+This is not the original software provided by GitHub which can be found in this repo: [github/personal-website](https://github.com/github/personal-website), now flagged as archived. It is not meant to be a replacement, it works differently while creating similar results.
 
 It is written in JavaScript and makes use of GitHub's [REST API](https://docs.github.com/rest).
 
@@ -97,31 +97,31 @@ More details on GitHub Pages can be found in the [official documentation](https:
 
 ## Advanced configuration
 
-The configuration of the *config.json* file is explained below in all of the setting possibilities.
+The configuration of the **config.json** file is explained below in all of the setting possibilities.
 
 field | settings | example
 ------------ | ------------- | -------------
-"username" | Your GitHub user name | String "yourUserName"
-"theme" | Choose "light" (default) or "dark" | String "light"
-"layout" | Composition of layout | Array [ "profile", "repos", ... , "gists", "topics" ]
-"meta" | Meta tags' page | Object { "title": "The page title", "description": "The page description" }
-"profile" | Profile infos to display | Object { "realname": false, "bio": false, "socials": false }
-"repos" | User repositories | Object { "limit": 6, "include": [ "include-this-repo", ... ], "exclude": [ "exclude-this-repo", ... ], "sort": "updated", "order": "desc" }
-"gists" | User gists | Object { "limit": 6, "include": [ "include-this-repo", ... ], "exclude": [ "exclude-this-repo", ... ], "sort": "updated", "order": "desc" }
-"topics" | User topics, passed manually | Array [ "a-topic", "another-topic", ... ]
-"socials" | List of social pages | Array
-"clientSide" | Use of client side dynamic | Array [ "repos", "gists" ]
-"clientSideOptions" | More control over the client side | { "repos": { "limit": 100, "exclude": [ "exclude-this-repo-on-client-side", ... ] }, ... }
-"clientSideDebug" | Enable the debugger in the client side | Boolean true
-"stylesheets" | Assets static stylesheet | Array [ "./src/style.css", "./vendor/icons/style.css", "./custom.css" ]
-"scripts" | Assets static scripts | Array [ "./src/script.js", "./custom.js" ]
-"template_folder" | Template folder | String "./template"
-"src_folder" | Source folder | String "./src"
-"output_folder" | Output folder for deploy | String "./out"
-"assets_folder" | Assets static folder | String "./out/assets"
-"assets_stylesheet" | The single stylesheet will created | String "styles.css"
-"assets_script" | The single script will created | String "scripts.js"
-"serve" | Address and port to serve local site | String "0.0.0.0:8080"
+"username" | Your GitHub user name | *String* "yourUserName"
+"theme" | Choose "light" (default) or "dark" | *String* "light"
+"layout" | Composition of layout | *Array* [ "profile", "repos", ... , "gists", "topics" ]
+"meta" | Meta tags' page | *Object* { "title": "The page title", "description": "The page description" }
+"profile" | Profile infos to display | *Object* { "realname": false, "bio": false, "socials": false }
+"repos" | User repositories | *Object* { "limit": 6, "include": [ "include-this-repo", ... ], "exclude": [ "exclude-this-repo", ... ], "sort": "updated", "order": "desc" }
+"gists" | User gists | *Object* { "limit": 6, "include": [ "include-this-repo", ... ], "exclude": [ "exclude-this-repo", ... ], "sort": "updated", "order": "desc" }
+"topics" | User topics, passed manually | *Array* [ "a-topic", "another-topic", ... ]
+"socials" | List of social pages | *Array* [ { "npm": "https://www.npmjs.com/~npm" }, { "website": "https://example.org" }, ... ]
+"clientSide" | Use of client side dynamic | *Array* [ "repos", "gists" ]
+"clientSideOptions" | More control over the client side | *Object* { "repos": { "limit": 100, "exclude": [ "exclude-this-repo-on-client-side", ... ] }, ... }
+"clientSideDebug" | Enable the debugger in the client side | *Boolean* true
+"stylesheets" | Assets static stylesheet | *Array* [ "./src/style.css", "./vendor/icons/style.css", "./custom.css" ]
+"scripts" | Assets static scripts | *Array* [ "./src/script.js", "./custom.js" ]
+"template_folder" | Template folder | *String* "./template"
+"src_folder" | Source folder | *String* "./src"
+"output_folder" | Output folder for deploy | *String* "./out"
+"assets_folder" | Assets static folder | *String* "./out/assets"
+"assets_stylesheet" | The single stylesheet will created | *String* "styles.css"
+"assets_script" | The single script will created | *String* "scripts.js"
+"serve" | Address and port to serve local site | *String* "0.0.0.0:8080"
 
 The script loads the API predefined number of repositories and gists. If you want to force it to respect a certain limit of items you can add the parameter `"strict": true` to the individual *repos* and *gists* settings.
 
