@@ -6,10 +6,10 @@ For testing purpose — **under development**
 This is a builder to create a one-page website profile to use in your GitHub Pages domain, for example: yourusername.github.io.
 
 It supports various layout settings:
-* **profile** sidebar with profile information.
-* **repos** profile repositories
-* **gists** profile gists
-* **topics** profile topics
+* **profile** sidebar with profile user information.
+* **repos** user repositories
+* **gists** user gists
+* **topics** user topics
 
 This is not the original software provided by GitHub which can be found in this repo: github/personal-website, now flagged as archived. It is not meant to be a replacement, it works differently while creating similar results.
 
@@ -106,9 +106,9 @@ field | settings | example
 "layout" | Composition of layout | Array [ "profile", "repos", ... , "gists", "topics" ]
 "meta" | Meta tags' page | Object { "title": "The page title", "description": "The page description" }
 "profile" | Profile infos to display | Object { "realname": false, "bio": false, "socials": false }
-"repos" | Repositories | Object { "limit": 6, "include": [ "include-this-repo", ... ], "exclude": [ "exclude-this-repo", ... ], "sort": "updated", "order": "desc" }
-"gists" | Gists | Object { "limit": 6, "include": [ "include-this-repo", ... ], "exclude": [ "exclude-this-repo", ... ], "sort": "updated", "order": "desc" }
-"topics" | Topics | Array [ "a-topic", "another-topic", ... ]
+"repos" | User repositories | Object { "limit": 6, "include": [ "include-this-repo", ... ], "exclude": [ "exclude-this-repo", ... ], "sort": "updated", "order": "desc" }
+"gists" | User gists | Object { "limit": 6, "include": [ "include-this-repo", ... ], "exclude": [ "exclude-this-repo", ... ], "sort": "updated", "order": "desc" }
+"topics" | User topics, passed manually | Array [ "a-topic", "another-topic", ... ]
 "socials" | List of social pages | Array
 "clientSide" | Use of client side dynamic | Array [ "repos", "gists" ]
 "clientSideOptions" | More control over the client side | { "repos": { "limit": 100, "exclude": [ "exclude-this-repo-on-client-side", ... ] }, ... }
