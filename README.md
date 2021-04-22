@@ -92,7 +92,7 @@ To make your own JS or CSS customisations, you can directly use these files in t
 
 In order to publish the created profile website, it is sufficient to create a main repository: *username.github.io* and copy the contents of the output directory "**out**" there.
 
-More details on GitHub Pages can be found in the [official documentation](https://docs.github.com/pages).
+More details on [GitHub Pages](https://docs.github.com/pages) can be found in GitHub documentation.
 
 
 ## Advanced configuration
@@ -129,7 +129,7 @@ The dynamic page update with client side differs from the static site. This is d
 
  
 
-⚠️ On the client side, there are limits on the number of requests per visitor. So use the client side option at your known risk. Learn more about the [Rate limiting](https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting) in the official documentation.
+⚠️ On the client side, there are limits on the number of requests per visitor. So use the client side option at your known risk. Learn more about the [Rate limiting](https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting) in GitHub documentation.
 
  
 

@@ -477,15 +477,16 @@ function html(depth = 1) {
 
   const meta = 'meta' in CONFIG && CONFIG.meta && typeof CONFIG.meta == 'object' ? CONFIG.meta : {};
   const profile = lodash.defaults({}, CONFIG.profile, { realname: false, location: false, socials: false });
-  const socials = 'socials' in CONFIG && CONFIG.socials && typeof CONFIG.socials == 'object' ? CONFIG.socials : {};
-  const topics = 'topics' in CONFIG && CONFIG.topics && typeof CONFIG.topics == 'object' ? CONFIG.topics : {};
-
+  const socials = 'socials' in CONFIG && CONFIG.socials && typeof CONFIG.socials == 'object' ? CONFIG.socials : [];
+  const topics = 'topics' in CONFIG && CONFIG.topics && typeof CONFIG.topics == 'object' ? CONFIG.topics : [];
 
   var socials_data = [];
+  var topics_data = [];
+  var body_classname = [ 'site', CONFIG.theme, 'sections-' + (CONFIG.layout.length - 1) ];
 
-  //TODO FIX ? not iterable error
-  for (var social_slug in socials) {
-    var social_url = socials[social_slug];
+
+  for (var social of socials) {
+    var [ social_slug, social_url ] = Object.entries(social)[0];
 
     if (social_slug in SOCIALS) {
       socials_data.push({ name: SOCIALS[social_slug].name, icon: 'icon-' + SOCIALS[social_slug].icon, url: social_url });
@@ -494,18 +495,12 @@ function html(depth = 1) {
     }
   }
 
-  var topics_data = [];
-
-  //TODO FIX ? not iterable error
-  for (var topic_slug of topics) {
-    topic_slug = topic_slug.trim().toLowerCase();
-
+  for (var topic of topics) {
+    var topic_slug = topic.trim().toLowerCase();
     var topic_url = 'https://github.com/topics/' + topic_slug.toLowerCase().trim();
 
     topics_data.push({ name: topic_slug, url: topic_url });
   }
-
-  var body_classname = [ 'site', CONFIG.theme, 'sections-' + (CONFIG.layout.length - 1) ];
 
 
   fetch().then(function(data) {
