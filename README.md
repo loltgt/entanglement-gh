@@ -65,7 +65,7 @@ A detailed explanation of all settings can be found in [Advanced configuration](
 To use it, just run the script with node `node index.js` or use one of the task presets:
 
 preset | description
-- | -
+------------ | -------------
 `npm run-script build` | Build all: js, css, html
 `npm run-script build-js` | Build only js
 `npm run-script build-css` | Build only css
@@ -97,7 +97,7 @@ More details on GitHub Pages can be found in the [official documentation](https:
 The configuration of the *config.json* file is explained below in all of the setting possibilities.
 
 field | settings | example
-- | - | -
+------------ | ------------- | -------------
 "username" | Your GitHub user name | String "yourUserName"
 "theme" | Choose "light" (default) or "dark" | String "light"
 "layout" | Composition of layout | Array [ "profile", "repos", ... , "gists", "topics" ]
