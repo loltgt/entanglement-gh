@@ -67,6 +67,7 @@ a:hover {
   flex-direction: column;
   margin: 0 0 1rem;
   padding: .75rem 1rem;
+  border-radius: .2rem;
 }
 .card-head {
   margin: 0 0 1rem;
@@ -121,6 +122,8 @@ a:hover {
 .profile_picture {
   width: 150px;
   height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
 }
 .profile_picture img {
   display: block;
