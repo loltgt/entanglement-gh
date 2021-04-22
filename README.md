@@ -21,6 +21,7 @@ It is written in JavaScript and makes use of GitHub's [REST API](https://docs.gi
 
 An example of websites that this software can create, *light* theme: [loltgt.github.io](https://loltgt.github.io), *dark* theme: [ctlcltd.github.io](https://ctlcltd.github.io).
 
+ 
 
 ## Why did I create it?
 
@@ -130,6 +131,7 @@ The dynamic page update with client side differs from the static site. This is d
 
 ⚠️ On the client side, there are limits on the number of requests per visitor. So use the client side option at your known risk. Learn more about the [Rate limiting](https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting) in the official documentation.
 
+ 
 
 ## Credits
 
